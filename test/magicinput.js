@@ -1,163 +1,50 @@
 (function ($, window, document, undefined) {
 
-  AbstractMagicInput = (function () {
-    function AbstractMagicInput (formField, options) {
-      this.formField = formField;
-      this.options = options || {};
+  function MagicInput(element, options) {
+    var defaults = {};
 
-      this.isMultiple = this.formField.multiple && (this.options.maxSelection > 1);
-      this.setDefaultText();
-      this.setDefaultValues();
-      this.setup();
-      this.setupHtml();
-      this.registerObservers();
-    }
+    this.$element = $(element);
+    this.config = $.extend({}, defaults, options);
+  }
 
-    AbstractMagicInput.prototype = {
-      setDefaultValues : function () {
-        var self = this;
-      }, 
+  MagicInput.prototype = {
 
-      setDefaultText : function () {
+    init : function () {},
 
-      },
+    render : function () {},
 
-      keyupChecker : function () {
-        var stroke, ref;
-        stroke = (ref = evt.which) ? ref : evt.keyCode;
-        switch (stroke) {
-          case 13: // `Enter`
-            evt.preventDefault();
-            if (this.resultsShowing) {
-              return this.resultSelect(evt);
-            }
-            break;
-          case 27:
-            if (this.resultsShowing) {
-              this.resultsHide();
-            }
-            return true;
-          case 9:
-          case 38:
-          case 40:
-          case 16:
-          case 91:
-          case 17:
-            break;
-          default:
-            return this.resultsSearch();
-        }
-      },
+    bindEvents : function () {
+      var self = this;
 
-      clipboardEventChecker : function (evt) {},
-
-      resultsSearch : function () {
-        if (this.resultsShowing) {
-          return this.winnowResults();
-        } else {
-          return this.resultsShow();
-        }
-      },
-
-      winnowResults : function () {
-        var option,
-            results = 0,
-            searchText = this.getSearchText(),
-            escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"),
-            regexAnchor = this.searchContains ? '' : '^',
-            regex = new RegExp(regexAnchor + escapedSearchText, 'i'),
-            zregex = new RegExp(escapedSearchText, 'i'),
-            data = this.resultData;
-
-        if (this.options.getMatchedFn && $.isFunction(this.options.getMatchedFn)) {
-
-        } else {
-
-        }
-
-        this.resultClearHighlight();
-        if (results < 1 && searchText.length) {
-          this.updateResultsContent('');
-          return this.noResults(searchText);
-        } else {
-          this.updateResultsContent(this.resultsOptionBuild());
-          return this.winnowResultsSetHighlight();
-        }
-      },
-
-      isBrowserSupport : function () {},
-
-      defMultipleTest : 'Select Some Options',
-
-      defSingleTest : 'Select an Option',
-
-      defNoResultText : 'No Results Match'
-    };
-
-    return AbstractMagicInput;
-
-  })();
+      this.$container
+        .on('click', '', function (e) {
+          eventHandlers.onBlur.call(self, e);
+        })
+        .on()
+        .on()
+        .on()
+        .on();
+    },
 
 
-  MagicInput = (function (_super) {
-    function MagicInput () {
-      return _super.apply(this, arguments);
-    }
+  };
 
-    MagicInput.prototype = $.extend(_super.prototype, {
-      setup : function () {
-        this.$formField = $(this.formField);
-        this.currentSelectedIndex = this.formField.selectedIndex || null;
-      },
+  var eventHandlers = {
 
-      setupHtml : function () {
-        var containerClz, containerProps,
-            containerWidth = this.$formField.width();
-        containerClz = ['chosen-container'];
-        containerProps = {
-          'class' : containerClz.join(' '),
-          'style' : 'width: ' + containerWidth + 'px;',
-          'title' : this.formField.title
-        };
-        this.$container = $('<div />', containerProps);
+    onBlur : function () {},
 
-        // holds the input field
-        var inputProps = {
-          'type'        : 'text',
-          'class'       : 'mi-search-input',
-          'readonly'    : !this.options.editable,
-          'placeholder' : this.options.placeholder,
-          'disabled'    : this.options.disabled
-        };
-        this.$input = $('<input />', inputProps);
+    onComboItemMouseOver : function () {},
 
-        // holds the suggestions
-        var comboboxProps = {
-          'class' : 'mi-suggestions dropdown-menu'
-        };
-        this.$combobox = $('<div />', comboboxProps);
+    onComboItemSelected : function () {},
 
-        this.$container.append(this.$input);
+    onInputClick : function () {},
 
-        // replace all with new elements
-        this.$formField.replaceWith(this.$container);
-      },
+    onInputFocus : function () {},
 
-      setupCombobox : function () {},
+    onKeyDown : function () {},
 
-      registerObservers : function () {
-        var self = this;
-        this.$container.bind('keyup.magicinput', function (evt) {
-          self.keyupChecker(evt);
-        });
-      },
-
-      destroy : function () {},
-    });
-
-    return MagicInput;
-
-  })(AbstractMagicInput);
+    onKeyUp : function () {},
+  };
 
 
   $.fn.magicInput = function (options) {
