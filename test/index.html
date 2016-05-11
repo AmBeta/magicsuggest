@@ -23,7 +23,7 @@
                 Scrabble Box (free entries + set of entries)
             </label>
             <div id="ms-scrabble" class="ms-ctn form-control">
-                <input type="text">
+                <input type="text" name="ms-scrabble">
             </div>
         </div>
     </div>
@@ -42,9 +42,7 @@
             <label for="mi-scrabble" class="control-label">
                 Scrabble Box (free entries + set of entries)
             </label>
-            <div id="mi-scrabble" class="ms-ctn form-control">
-                <input type="text">
-            </div>
+            <input type="text" name="my-scrabble">
         </div>
     </div>
 </body>
@@ -56,7 +54,15 @@
     });
 
     $('#ms-select').magicSuggest({
-        placeholder: 'Type some real or fake fruits'
+        placeholder: 'Type some real or fake fruits',
+        data: ['Banana', 'Apple', 'Orange', 'Lemon', 'Pineapple',
+            'Pear', 'Melon', 'Peach', 'A', 'B', 'C', 'D']
+    });
+
+    $('[name="my-scrabble"]').magicInput({
+        placeholder: 'Type some real or fake fruits',
+        data: ['Banana', 'Apple', 'Orange', 'Lemon', 'Pineapple',
+            'Pear', 'Melon', 'Peach', 'A', 'B', 'C', 'D']
     });
 </script>
 </html>

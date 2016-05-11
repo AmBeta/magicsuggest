@@ -1,41 +1,146 @@
 (function ($, window, document, undefined) {
 
-  function MagicInput(element, options) {
+  function MagicInput(formField, options) {
     var defaults = {};
 
-    this.$element = $(element);
+    this.$formField = $(formField);
     this.config = $.extend({}, defaults, options);
+
+    this.init();
   }
 
   MagicInput.prototype = {
 
-    init : function () {},
+    init : function () {
+      this.$container = null;
+      this.$trigger = null;
+      this.$suggest = null
 
-    render : function () {},
+      this.render();
+      this.renderSuggest(this.config.data);
+      this.bindEvents();
+    },
+
+    render : function () {
+      var fieldName = this.$formField.attr('name');
+
+      this.$container = $('<div />', {
+        'class' : 'form-group dropdown mi-ctn',
+      });
+
+      this.$input = $('<input />', {
+        'name' : fieldName,
+        'type' : 'text',
+        'class' : 'form-control mi-input',
+        'placeholder' : this.config.placeholder
+      });
+
+      if (this.config.trigger) {
+        this.$trigger = $('<button />', {
+          'class' : 'btn btn-default dropdown-toggle',
+          'type' : 'button',
+        }).append($('<span class="caret"></span>'));
+      }
+
+      this.$suggest = $('<ul />', {
+        'class' : 'dropdown-menu mi-suggest-ctn',
+        'style' : 'width: 100%;'
+      });
+
+      this.$container.append(this.$input).append(this.$trigger).append(this.$suggest);
+      this.$formField.replaceWith(this.$container);
+    },
+
+    renderSuggest : function (items) {
+      var self = this;
+      self.$suggest.empty();
+      $.each(items, function (idx, item) {
+        var $item = $('<li />', {
+          'id' : item.id || miUtils.id(),
+          'class' : 'mi-suggest-item',
+          'data-json' : JSON.stringify(item),
+        }).append($('<a />', {
+          'href' : 'javascript:void(0);',
+          'html' : item.value || item
+        }));
+        self.$suggest.append($item);
+      });
+    },
 
     bindEvents : function () {
       var self = this;
 
       this.$container
-        .on('click', '', function (e) {
-          eventHandlers.onBlur.call(self, e);
+        .on('click', 'input', function (evt) {
+          eventHandlers.onFocus.call(self, evt);
         })
-        .on()
-        .on()
-        .on()
-        .on();
+        .on('blur', 'input', function (evt) {
+          eventHandlers.onBlur.call(self, evt);
+        })
+        .on('mousedown', '.mi-suggest-item', function (evt) {
+          eventHandlers.onComboItemSelected.call(self, evt);
+        })
+        .on('change', 'input', function (evt) {
+          eventHandlers.onChange.call(self, evt);
+        })
+        .on('keyup', 'input', function (evt) {
+          eventHandlers.onKeyUp.call(self, evt);
+        });
     },
 
+    collapse : function () {
+      this.$container.removeClass('open');
+    },
 
+    expand : function () {
+      this.$container.addClass('open');
+    },
+
+    searchResults : function () {
+      var searchText = this.getSearchText();
+    },
+
+    getSearchText : function () {
+      if (this.$input.val() === this.defaultText) {
+        return '';
+      } else {
+        return $.trim(this.$input.val());
+      }
+    },
+  };
+
+  /**************** PRIVATE VARIABLES *****************/
+  var miUtils = {
+    id : (function () {
+      var idx = 0;
+      return function () {
+        idx = idx < 999 ? idx : 0;
+        return 'mi-id-' + idx++;
+      };
+    })()
   };
 
   var eventHandlers = {
 
-    onBlur : function () {},
+    onBlur : function () {
+      this.collapse();
+    },
+
+    onFocus : function () {
+      this.expand();
+    },
+
+    onChange : function () {
+      console.log(this.$input.val());
+    },
 
     onComboItemMouseOver : function () {},
 
-    onComboItemSelected : function () {},
+    onComboItemSelected : function (evt) {
+      var target = evt.srcElement || evt.target,
+          $target = $(target);
+      this.$input.val($target.text());
+    },
 
     onInputClick : function () {},
 
@@ -43,10 +148,19 @@
 
     onKeyDown : function () {},
 
-    onKeyUp : function () {},
+    onKeyUp : function (evt) {
+      var stroke;
+      switch (stroke) {
+        case 13:
+          evt.preventDefault();
+          break;
+        default:
+          this.searchResults();
+      }
+    },
   };
 
-
+  /************ EXPORT TO JQUERY NAMESPACE ************/
   $.fn.magicInput = function (options) {
     var obj = $(this);
 
