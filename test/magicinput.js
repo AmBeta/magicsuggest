@@ -1,7 +1,9 @@
 (function ($, window, document, undefined) {
 
   function MagicInput(formField, options) {
-    var defaults = {};
+    var defaults = {
+      noResultsText : 'Cannot find this item '
+    };
 
     this.$formField = $(formField);
     this.config = $.extend({}, defaults, options);
@@ -16,8 +18,10 @@
       this.$trigger = null;
       this.$suggest = null
 
+      this._allItems = this.config.data;
+
       this.render();
-      this.renderSuggest(this.config.data);
+      this.renderSuggest(this._allItems);
       this.bindEvents();
     },
 
@@ -44,7 +48,10 @@
 
       this.$suggest = $('<ul />', {
         'class' : 'dropdown-menu mi-suggest-ctn',
-        'style' : 'width: 100%;'
+        'style' : 'overflow-y:auto;'
+      }).css({
+        'width' : '100%',
+        'max-height' : '145px'
       });
 
       this.$container.append(this.$input).append(this.$trigger).append(this.$suggest);
@@ -80,9 +87,9 @@
         .on('mousedown', '.mi-suggest-item', function (evt) {
           eventHandlers.onComboItemSelected.call(self, evt);
         })
-        .on('change', 'input', function (evt) {
-          eventHandlers.onChange.call(self, evt);
-        })
+        // .on('change', 'input', function (evt) {
+        //   eventHandlers.onChange.call(self, evt);
+        // })
         .on('keyup', 'input', function (evt) {
           eventHandlers.onKeyUp.call(self, evt);
         });
@@ -97,7 +104,25 @@
     },
 
     searchResults : function () {
-      var searchText = this.getSearchText();
+      var suggestedItems = [],
+          searchText = this.getSearchText(),
+          escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"),
+          zregex = new RegExp(escapedSearchText, 'i'),
+          regex = this.getSearchRegex(escapedSearchText);
+
+      if (!searchText.length) {
+        this.renderSuggest(this._allItems);
+        return;
+      }
+
+      // SEARCHING...
+      console.log('Searching for ' + searchText + '...');
+
+      if (suggestedItems.length > 0) {
+        this.renderSuggest(suggestedItems);
+      } else {
+        this.renderNoResults(searchText);
+      }
     },
 
     getSearchText : function () {
@@ -106,6 +131,15 @@
       } else {
         return $.trim(this.$input.val());
       }
+    },
+
+    getSearchRegex : function () {},
+
+    renderNoResults : function (searchText) {
+      this.$suggest.empty().append($('<li />', {
+        'class' : 'mi-no-results',
+        'text' : this.config.noResultsText + '\"' + searchText + '\"'
+      }));
     },
   };
 
@@ -131,7 +165,6 @@
     },
 
     onChange : function () {
-      console.log(this.$input.val());
     },
 
     onComboItemMouseOver : function () {},
