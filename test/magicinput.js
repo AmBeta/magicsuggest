@@ -2,7 +2,11 @@
 
   function MagicInput(formField, options) {
     var defaults = {
-      noResultsText : 'Cannot find this item '
+      comboWidth : '100%',
+      comboMaxHeight : '140px',
+      trigger : true,
+      placeholder : '',
+      noResultsText : 'Cannot find item ',
     };
 
     this.$formField = $(formField);
@@ -18,11 +22,26 @@
       this.$trigger = null;
       this.$suggest = null
 
-      this._allItems = this.config.data;
+      this._allSuggests = this.initAllSuggests(this.config.data);
 
       this.render();
-      this.renderSuggest(this._allItems);
+      this.renderSuggest(this._allSuggests);
       this.bindEvents();
+    },
+
+    initAllSuggests : function (data) {
+      var self = this;
+      var suggests = $.map(data, function (item, idx) {
+        return {
+          id : item.id || miUtils.id(),
+          value : item.value || item
+        };
+      });
+      return $.map(suggests, function (item, idx) {
+        return $.extend(item, {
+          searchText : item.value
+        });
+      });
     },
 
     render : function () {
@@ -40,18 +59,19 @@
       });
 
       if (this.config.trigger) {
-        this.$trigger = $('<button />', {
-          'class' : 'btn btn-default dropdown-toggle',
-          'type' : 'button',
-        }).append($('<span class="caret"></span>'));
+        this.$trigger = $('<span class="caret"></span>').css({
+          'position' : 'absolute',
+          'right' : '10px',
+          'top' : '50%'
+        });
       }
 
       this.$suggest = $('<ul />', {
         'class' : 'dropdown-menu mi-suggest-ctn',
         'style' : 'overflow-y:auto;'
       }).css({
-        'width' : '100%',
-        'max-height' : '145px'
+        'width' : this.config.comboWidth,
+        'max-height' : this.config.maxHeight
       });
 
       this.$container.append(this.$input).append(this.$trigger).append(this.$suggest);
@@ -59,16 +79,17 @@
     },
 
     renderSuggest : function (items) {
-      var self = this;
+      var self = this,
+          highlighted = items.length == 1 ? 'bg-info' : '';
       self.$suggest.empty();
       $.each(items, function (idx, item) {
         var $item = $('<li />', {
-          'id' : item.id || miUtils.id(),
-          'class' : 'mi-suggest-item',
+          'id' : item.id,
+          'class' : 'mi-suggest-item ' + highlighted,
           'data-json' : JSON.stringify(item),
         }).append($('<a />', {
           'href' : 'javascript:void(0);',
-          'html' : item.value || item
+          'html' : item.value
         }));
         self.$suggest.append($item);
       });
@@ -87,9 +108,9 @@
         .on('mousedown', '.mi-suggest-item', function (evt) {
           eventHandlers.onComboItemSelected.call(self, evt);
         })
-        // .on('change', 'input', function (evt) {
-        //   eventHandlers.onChange.call(self, evt);
-        // })
+        .on('keydown', 'input', function (evt) {
+          eventHandlers.onKeyDown.call(self, evt);
+        })
         .on('keyup', 'input', function (evt) {
           eventHandlers.onKeyUp.call(self, evt);
         });
@@ -104,19 +125,23 @@
     },
 
     searchResults : function () {
-      var suggestedItems = [],
+      var self = this,
+          suggestedItems = [],
           searchText = this.getSearchText(),
           escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"),
-          zregex = new RegExp(escapedSearchText, 'i'),
           regex = this.getSearchRegex(escapedSearchText);
 
       if (!searchText.length) {
-        this.renderSuggest(this._allItems);
+        this.renderSuggest(this._allSuggests);
         return;
       }
 
-      // SEARCHING...
-      console.log('Searching for ' + searchText + '...');
+      // Search for results
+      $.each(this._allSuggests, function (idx, item) {
+        var searchMatch = self.searchStringMatch(item.searchText, regex);
+        item.searchMatch = searchMatch;
+        if (searchMatch) suggestedItems.push(item);
+      });
 
       if (suggestedItems.length > 0) {
         this.renderSuggest(suggestedItems);
@@ -133,13 +158,79 @@
       }
     },
 
-    getSearchRegex : function () {},
+    getSearchRegex : function (searchText) {
+      if (this.searchContains) {
+        return new RegExp(searchText, 'i');
+      }
+      return new RegExp('^' + searchText, 'i');
+    },
+
+    searchStringMatch : function (searchString, regex) {
+      if (regex.test(searchString)) {
+        return true;
+      } else if (this.config.enableSplitWordSearch && 
+                  (searchString.indexOf(' ') >= 0 || searchString.indexOf('[') === 0)) {
+        var parts = searchString.replace(/\[|\]/g, '').split(' ');
+        if (parts.length) {
+          for (var i = 0, len = parts.length; i < len; i++) {
+            if (regex.test(parts[i])) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    },
 
     renderNoResults : function (searchText) {
       this.$suggest.empty().append($('<li />', {
-        'class' : 'mi-no-results',
+        'class' : 'mi-no-results bg-warning',
         'text' : this.config.noResultsText + '\"' + searchText + '\"'
+      }).css({
+        'padding' : '3px 15px'
       }));
+    },
+
+    switchHighlighted : function (stroke) {
+      var self = this,
+          $curr = self.$suggest.find('li.bg-info'),
+          $next = null;
+      if ($curr.length == 0) {
+        self.$suggest.find('li:first').addClass('bg-info');
+        return;
+      }
+      switch (stroke) {
+        case 38:  // Up
+          $next = $curr.prev('li');
+          break;
+        case 40:  // Down
+          $next = $curr.next('li');
+          break;
+      }
+      if ($next.length) {
+        // move the next item to view
+        var viewTop = self.$suggest.scrollTop(),
+            viewHeight = self.$suggest.height(),
+            itemHeight = self.$suggest.find('li').height(),
+            itemTop = $next.position().top;
+        if (itemTop < 5) {
+          self.$suggest.scrollTop(viewTop - itemHeight);
+        } else if (itemTop > viewHeight) {
+          self.$suggest.scrollTop(viewTop + itemHeight);
+        }
+
+        $curr.removeClass('bg-info');
+        $next.addClass('bg-info');
+      }
+    },
+
+    chooseHighlighted : function () {
+      var self = this,
+          $highlighted = self.$suggest.find('li.bg-info');
+      if ($highlighted.length) {
+        self.$input.val($highlighted.find('a').html());
+        self.$input.blur();
+      }
     },
   };
 
@@ -157,38 +248,52 @@
   var eventHandlers = {
 
     onBlur : function () {
-      this.collapse();
+      var self = this;
+      self.collapse();
+      self.$suggest.find('li.bg-info').removeClass('bg-info');
     },
 
     onFocus : function () {
-      this.expand();
+      var self = this;
+      self.expand();
+      self.searchResults();
     },
-
-    onChange : function () {
-    },
-
-    onComboItemMouseOver : function () {},
 
     onComboItemSelected : function (evt) {
       var target = evt.srcElement || evt.target,
           $target = $(target);
-      this.$input.val($target.text());
+      this.$input.val($target.html());
     },
 
-    onInputClick : function () {},
-
-    onInputFocus : function () {},
-
-    onKeyDown : function () {},
+    onKeyDown : function (evt) {
+      var self = this,
+          stroke, tmp;
+      stroke = (tmp = evt.which) != null ? tmp : evt.keyCode;
+      switch (stroke) {
+        case 38:  // Up
+        case 40:  // Down
+          evt.preventDefault();
+          self.switchHighlighted(stroke);
+          break;
+        case 13:  // Enter
+          evt.preventDefault();
+          self.chooseHighlighted();
+          break;
+      }
+    },
 
     onKeyUp : function (evt) {
-      var stroke;
+      var self = this,
+          stroke, tmp;
+      stroke = (tmp = evt.which) != null ? tmp : evt.keyCode;
       switch (stroke) {
-        case 13:
+        case 38:  // Up
+        case 40:  // Down
+        case 13:  // Enter
           evt.preventDefault();
           break;
         default:
-          this.searchResults();
+          self.searchResults();
       }
     },
   };
@@ -232,7 +337,7 @@
 
       var field = new MagicInput(this, $.extend([], $.fn.magicInput.defaults, options, def));
       cntr.data('magicInput', field);
-      field.container.data('magicInput', field);
+      field.$container.data('magicInput', field);
     });
 
     if (obj.size() === 1) {
