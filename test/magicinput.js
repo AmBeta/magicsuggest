@@ -20,13 +20,17 @@
     init : function () {
       this.$container = null;
       this.$trigger = null;
-      this.$suggest = null
-
-      this._allSuggests = this.initAllSuggests(this.config.data);
+      this.$suggest = null;
 
       this.render();
-      this.renderSuggest(this._allSuggests);
       this.bindEvents();
+      this.reset(this.config);
+    },
+
+    reset : function (options) {
+      this.config = $.extend(this.config, options);
+      this._allSuggests = this.initAllSuggests(this.config.data);
+      this.renderSuggest(this._allSuggests);
     },
 
     initAllSuggests : function (data) {
@@ -311,6 +315,7 @@
     var obj = $(this);
 
     if (obj.size() === 1 && obj.data('magicInput')) {
+      obj.data('magicInput').reset(options);
       return obj.data('magicInput');
     }
 
@@ -318,9 +323,11 @@
       var cntr = $(this);
 
       if (cntr.data('magicInput')) {
+        cntr.data('magicInput').reset(options);
         return;
       }
 
+      // support for `select` tag
       if (this.nodeName.toLowerCase === 'select') {
         options.data = [];
         options.value = [];
@@ -344,13 +351,9 @@
       });
 
       var field = new MagicInput(this, $.extend([], $.fn.magicInput.defaults, options, def));
-      cntr.data('magicInput', field);
-      field.$container.data('magicInput', field);
+      field.$input.data('magicInput', field);
     });
 
-    if (obj.size() === 1) {
-      return obj.data('magicInput');
-    }
     return obj;
   };
 
