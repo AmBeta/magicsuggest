@@ -48,14 +48,18 @@
       var fieldName = this.$formField.attr('name');
 
       this.$container = $('<div />', {
-        'class' : 'form-group dropdown mi-ctn',
+        'class' : 'dropdown mi-ctn',
       });
 
       this.$input = $('<input />', {
         'name' : fieldName,
         'type' : 'text',
         'class' : 'form-control mi-input',
-        'placeholder' : this.config.placeholder
+        'placeholder' : this.config.placeholder,
+        'autocomplete' : 'off'
+      }).css({
+        // fix problem in bootstrap style of `.form-control`
+        'float' : 'none'
       });
 
       if (this.config.trigger) {
@@ -68,7 +72,7 @@
 
       this.$suggest = $('<ul />', {
         'class' : 'dropdown-menu mi-suggest-ctn',
-        'style' : 'overflow-y:auto;'
+        'style' : 'overflow-y:auto;overflow-x:hidden;'
       }).css({
         'width' : this.config.comboWidth,
         'max-height' : this.config.maxHeight
@@ -84,7 +88,7 @@
       self.$suggest.empty();
       $.each(items, function (idx, item) {
         var $item = $('<li />', {
-          'id' : item.id,
+          'id' : 'mi_li_' + item.id,
           'class' : 'mi-suggest-item ' + highlighted,
           'data-json' : JSON.stringify(item),
         }).append($('<a />', {
@@ -137,11 +141,15 @@
       }
 
       // Search for results
-      $.each(this._allSuggests, function (idx, item) {
-        var searchMatch = self.searchStringMatch(item.searchText, regex);
-        item.searchMatch = searchMatch;
-        if (searchMatch) suggestedItems.push(item);
-      });
+      if (this.config.matchFn && $.isFunction(this.config.matchFn)) {
+        suggestedItems = this.config.matchFn(escapedSearchText);
+      } else {
+        $.each(this._allSuggests, function (idx, item) {
+          var searchMatch = self.searchStringMatch(item.searchText, regex);
+          item.searchMatch = searchMatch;
+          if (searchMatch) suggestedItems.push(item);
+        });
+      }
 
       if (suggestedItems.length > 0) {
         this.renderSuggest(suggestedItems);
@@ -240,7 +248,7 @@
       var idx = 0;
       return function () {
         idx = idx < 999 ? idx : 0;
-        return 'mi-id-' + idx++;
+        return idx++;
       };
     })()
   };

@@ -45,6 +45,19 @@
             <input type="text" name="my-scrabble">
         </div>
     </div>
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3 col-lg-6">
+            <div class="">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="foodName">
+                    <span class="input-group-btn">
+                        <button class="btn btn-default">Query In Shop</button>
+                        <button class="btn btn-warning">Query In Group</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 <script type="text/javascript">
     $('#ms-scrabble').magicSuggest({
@@ -63,6 +76,17 @@
         placeholder: 'Type some real or fake fruits',
         data: ['Banana', 'Apple', 'Orange', 'Lemon', 'Pineapple',
             'Pear', 'Melon', 'Peach', 'A', 'B', 'C', 'D']
+    });
+
+    $('[name="foodName"]').magicInput({
+        placeholder: 'Type some real or fake fruits',
+        data: [{
+            id : '11',
+            value : 'Apple'
+        }, {
+            id : '22',
+            value : 'Banana'
+        }]
     });
 </script>
 </html>
