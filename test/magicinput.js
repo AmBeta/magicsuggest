@@ -3,7 +3,7 @@
   function MagicInput(formField, options) {
     var defaults = {
       comboWidth : '100%',
-      comboMaxHeight : '140px',
+      maxHeight : '140px',
       trigger : true,
       placeholder : '',
       noResultsText : 'Cannot find item ',
@@ -57,6 +57,7 @@
 
       this.$input = $('<input />', {
         'name' : fieldName,
+        'value' : this.config.value,
         'type' : 'text',
         'class' : 'form-control mi-input',
         'placeholder' : this.config.placeholder,
@@ -89,7 +90,7 @@
     renderSuggest : function (items) {
       var self = this,
           highlighted = items.length == 1 ? 'bg-info' : '';
-      self.$suggest.empty();
+      self.$suggest.empty().toggleClass('hidden', items.length == 0);
       $.each(items, function (idx, item) {
         var $item = $('<li />', {
           'id' : 'mi_li_' + item.id,
@@ -200,7 +201,7 @@
         'text' : this.config.noResultsText + '\"' + searchText + '\"'
       }).css({
         'padding' : '3px 15px'
-      }));
+      })).toggleClass('hidden', this.config.noResultsText.length == 0);
     },
 
     switchHighlighted : function (stroke) {
@@ -347,7 +348,8 @@
       var def = {};
 
       $.each(this.attributes, function (i, att) {
-        def[att.name] = att.name === 'value' && att.value !== '' ? JSON.parse(att.value) : att.value;
+        // def[att.name] = att.name === 'value' && att.value !== '' ? JSON.parse(att.value) : att.value;
+        def[att.name] = att.value;
       });
 
       var field = new MagicInput(this, $.extend([], $.fn.magicInput.defaults, options, def));
